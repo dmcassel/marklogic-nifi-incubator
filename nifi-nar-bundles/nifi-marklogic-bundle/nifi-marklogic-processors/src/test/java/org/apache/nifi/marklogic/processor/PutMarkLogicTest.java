@@ -198,6 +198,58 @@ public class PutMarkLogicTest extends AbstractMarkLogicProcessorTest {
     }
 
     @Test
+    public void twoPermissionsWithSameRole() {
+        processContext.setProperty(PutMarkLogic.PERMISSIONS, "manage-user,read,manage-user,update");
+        processor.initialize(initializationContext);
+
+        addFlowFile("<test/>");
+
+        processor.onTrigger(processContext, mockProcessSessionFactory);
+
+        DocumentMetadataHandle metadata = (DocumentMetadataHandle) processor.writeEvent.getMetadata();
+        DocumentMetadataHandle.DocumentPermissions perms = metadata.getPermissions();
+        assertEquals(1, perms.size());
+        Iterator<DocumentMetadataHandle.Capability> iterator = perms.get("manage-user").iterator();
+        java.util.Set<DocumentMetadataHandle.Capability> capabilities = perms.get("manage-user");
+        assertEquals(2, capabilities.size());
+        assertTrue(capabilities.contains(DocumentMetadataHandle.Capability.UPDATE));
+        assertTrue(capabilities.contains(DocumentMetadataHandle.Capability.READ));
+    }
+
+    @Test
+    public void customPermissionsWithAttributes() {
+        processContext.setProperty(PutMarkLogic.PERMISSIONS, "${readRole},read,${updateRole},update");
+        processor.initialize(initializationContext);
+
+        Map<String,String> attributes = new HashMap<>();
+        attributes.put("readRole", "manage-user");
+        attributes.put("updateRole", "manage-admin");
+        addFlowFile(attributes, "<test/>");
+
+        processor.onTrigger(processContext, mockProcessSessionFactory);
+
+        DocumentMetadataHandle metadata = (DocumentMetadataHandle) processor.writeEvent.getMetadata();
+        DocumentMetadataHandle.DocumentPermissions perms = metadata.getPermissions();
+        assertEquals(2, perms.size());
+        assertEquals(DocumentMetadataHandle.Capability.READ, perms.get("manage-user").iterator().next());
+        assertEquals(DocumentMetadataHandle.Capability.UPDATE, perms.get("manage-admin").iterator().next());
+    }
+
+    @Test
+    public void noPermissionsSet() {
+        processContext.setProperty(PutMarkLogic.PERMISSIONS, "");
+        processor.initialize(initializationContext);
+
+        addFlowFile("<test/>");
+
+        processor.onTrigger(processContext, mockProcessSessionFactory);
+
+        DocumentMetadataHandle metadata = (DocumentMetadataHandle) processor.writeEvent.getMetadata();
+        DocumentMetadataHandle.DocumentPermissions perms = metadata.getPermissions();
+        assertEquals(0, perms.size());
+    }
+
+    @Test
     public void customMimetype() {
         processContext.setProperty(PutMarkLogic.MIMETYPE, "text/xml");
         processor.initialize(initializationContext);

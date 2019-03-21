@@ -50,6 +50,7 @@ public class PutMarkLogicRecordTest extends AbstractMarkLogicProcessorTest {
     public void putRecords() throws InitializationException {
         runner.enableControllerService(service);
         runner.assertValid(service);
+        runner.setValidateExpressionUsage(false);
 
         runner.setProperty(PutMarkLogicRecord.DATABASE_CLIENT_SERVICE, databaseClientServiceIdentifier);
         runner.addControllerService("reader", recordReader);
